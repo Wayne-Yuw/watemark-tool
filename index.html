@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -10,10 +10,10 @@
     <div class="container">
         <header class="header">
             <h1>文件水印工具</h1>
-            <p class="subtitle">支持图片和PDF文件添加水印</p>
+            <p class="subtitle">支持图片和 PDF 文件添加水印</p>
         </header>
 
-        <main class="main-content">
+        <main class="main-content initial-state">
             <!-- 区域1: 文件上传区域 -->
             <section class="upload-section" id="uploadSection">
                 <div class="upload-area" id="uploadArea">
@@ -50,7 +50,7 @@
                 <div class="tabs">
                     <button class="tab-btn active" data-tab="text">文字水印</button>
                     <button class="tab-btn" data-tab="image">图片水印</button>
-                    <button class="tab-btn" data-tab="logo">Logo水印</button>
+                    <button class="tab-btn" data-tab="logo">Logo 水印</button>
                 </div>
 
                 <!-- 水印内容设置 -->
@@ -59,7 +59,7 @@
                     <div class="tab-panel active" id="textPanel">
                         <div class="form-group">
                             <label for="watermarkText">水印文字</label>
-                            <input type="text" id="watermarkText" placeholder="请输入水印文字" class="input-field">
+                            <input type="text" id="watermarkText" data-default-text="水印文字" placeholder="请输入水印文字" class="input-field">
                         </div>
                         <div class="form-group">
                             <label for="fontSize">字体大小</label>
@@ -90,34 +90,29 @@
                         </div>
                     </div>
 
-                    <!-- Logo水印设置 -->
+                    <!-- Logo 水印设置 -->
                     <div class="tab-panel" id="logoPanel">
                         <div class="form-group">
-                            <label for="logoImage">Logo图片</label>
+                            <label for="logoImage">Logo 图片</label>
                             <input type="file" id="logoImage" accept="image/*" class="input-field">
                             <div class="image-preview" id="logoPreview"></div>
                         </div>
                         <div class="form-group">
-                            <label for="logoSize">Logo大小</label>
+                            <label for="logoSize">Logo 大小</label>
                             <div class="slider-group">
-                                <input type="range" id="logoSize" min="50" max="300" value="100" class="slider">
-                                <input type="number" id="logoSizeValue" min="50" max="300" value="100" class="input-number">
+                                <input type="range" id="logoSize" min="30" max="300" value="100" class="slider">
+                                <input type="number" id="logoSizeValue" min="30" max="300" value="100" class="input-number">
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- 通用水印设置 -->
-                <div class="common-settings">
-                    <h3 class="subsection-title">通用设置</h3>
-
-                    <!-- 水印样式 -->
+                    <!-- 平铺样式选择 -->
                     <div class="form-group">
                         <label>水印样式</label>
                         <div class="style-options">
                             <button class="style-btn active" data-style="full">
                                 <div class="style-icon full"></div>
-                                <span>铺满</span>
+                                <span>整张</span>
                             </button>
                             <button class="style-btn" data-style="top">
                                 <div class="style-icon top"></div>
@@ -142,7 +137,7 @@
                         </div>
                     </div>
 
-                    <!-- 单个水印位置选择器 (当选择单个水印时显示) -->
+                    <!-- 单个水印位置选择（当选择单个水印时显示） -->
                     <div class="form-group position-selector" id="positionSelector" style="display: none;">
                         <label>水印位置</label>
                         <div class="position-grid">
@@ -162,8 +157,8 @@
                     <div class="form-group">
                         <label for="spacing">水印间距</label>
                         <div class="slider-group">
-                            <input type="range" id="spacing" min="10" max="200" value="50" class="slider">
-                            <input type="number" id="spacingValue" min="10" max="200" value="50" class="input-number">
+                            <input type="range" id="spacing" min="0" max="200" value="20" class="slider">
+                            <input type="number" id="spacingValue" min="0" max="200" value="20" class="input-number">
                         </div>
                     </div>
 
@@ -213,3 +208,7 @@
     <script src="js/main.js"></script>
 </body>
 </html>
+
+
+
+
