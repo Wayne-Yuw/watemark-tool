@@ -6,6 +6,7 @@ let originalImageData = null; // 淇濆瓨鍘熷鍥惧儚
 let pdfDoc = null; // PDF文档对象
 let currentPdfPage = 1; // 当前PDF页码
 let totalPdfPages = 0; // PDF总页数
+let offscreenCanvas = null; // 离屏canvas，用于PDF水印渲染，不影响预览
 let watermarkSettings = {
     type: 'text',
     text: '',
@@ -608,13 +609,20 @@ function applyWatermark() {
     updatePreview();
     }
 
-function downloadFile() {
-    if (!previewCanvas) return;
+async function downloadFile() {
+    if (!uploadedFile) return;
 
-    const link = document.createElement('a');
-    link.download = `watermarked_${uploadedFile.name}`;
-    link.href = previewCanvas.toDataURL('image/png');
-    link.click();
+    if (currentFileType === 'pdf') {
+        // PDF文件：生成带水印的PDF
+        await downloadWatermarkedPdf();
+    } else if (currentFileType === 'image') {
+        // 图片文件：直接从canvas导出
+        if (!previewCanvas) return;
+        const link = document.createElement('a');
+        link.download = `watermarked_${uploadedFile.name}`;
+        link.href = previewCanvas.toDataURL('image/png');
+        link.click();
+    }
 }
 
 function resetSettings() {
@@ -943,6 +951,105 @@ function resetPdfState() {
     totalPdfPages = 0;
     pdfControls.style.display = 'none';
 }
+/**
+ * 下载带水印的PDF
+ */
+async function downloadWatermarkedPdf() {
+    if (!pdfDoc || !uploadedFile) return;
+    
+    try {
+        // 显示加载提示
+        downloadBtn.disabled = true;
+        downloadBtn.textContent = '生成中...';
+        
+        // 创建离屏canvas用于渲染，不影响预览
+        if (!offscreenCanvas) {
+            offscreenCanvas = document.createElement('canvas');
+        }
+        
+        // 使用pdf-lib创建新PDF
+        const { PDFDocument } = PDFLib;
+        const pdfDocLib = await PDFDocument.create();
+        
+        // 遍历所有页面（使用离屏canvas，不影响预览）
+        for (let pageNum = 1; pageNum <= totalPdfPages; pageNum++) {
+            // 渲染当前页面到离屏canvas（带水印）
+            await renderPdfPageToOffscreenCanvas(pageNum);
+            
+            // 将离屏canvas转换为图片
+            const imgData = offscreenCanvas.toDataURL('image/png');
+            const imgBytes = await fetch(imgData).then(res => res.arrayBuffer());
+            
+            // 将图片嵌入到新PDF中
+            const image = await pdfDocLib.embedPng(imgBytes);
+            
+            // 添加新页面，尺寸与原始PDF页面相同
+            const page = pdfDocLib.addPage([offscreenCanvas.width, offscreenCanvas.height]);
+            
+            // 绘制图片到页面
+            page.drawImage(image, {
+                x: 0,
+                y: 0,
+                width: offscreenCanvas.width,
+                height: offscreenCanvas.height
+            });
+        }
+        
+        // 生成PDF字节
+        const pdfBytes = await pdfDocLib.save();
+        
+        // 下载PDF（不显示alert提示）
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `watermarked_${uploadedFile.name}`;
+        link.click();
+        
+        // 清理
+        URL.revokeObjectURL(link.href);
+        
+        // 恢复按钮状态
+        downloadBtn.disabled = false;
+        downloadBtn.textContent = '下载文件';
+    } catch (error) {
+        console.error('生成PDF失败:', error);
+        alert('生成PDF失败，请重试');
+        downloadBtn.disabled = false;
+        downloadBtn.textContent = '下载文件';
+    }
+}
+
+/**
+ * 渲染指定页面的PDF到离屏canvas并应用水印（用于生成最终PDF，不影响预览）
+ */
+async function renderPdfPageToOffscreenCanvas(pageNum) {
+    if (!pdfDoc || !offscreenCanvas) return;
+
+    try {
+        const page = await pdfDoc.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 2 });
+
+        // 设置离屏canvas尺寸
+        offscreenCanvas.width = viewport.width;
+        offscreenCanvas.height = viewport.height;
+
+        const ctx = offscreenCanvas.getContext('2d');
+        ctx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+
+        // 渲染PDF到离屏canvas
+        await page.render({
+            canvasContext: ctx,
+            viewport: viewport
+        }).promise;
+
+        // 应用水印到离屏canvas
+        applyWatermarkToCanvas(ctx, offscreenCanvas.width, offscreenCanvas.height);
+    } catch (error) {
+        console.error('渲染PDF页面到离屏canvas失败:', error);
+        throw error;
+    }
+}
+
 
 
 
