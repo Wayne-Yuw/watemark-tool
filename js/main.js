@@ -431,7 +431,10 @@ function syncSliderWithInput(slider, input) {
 
 // ===== 姘村嵃棰勮鏇存柊 =====
 function updatePreview() {
-    if (!uploadedFile || currentFileType !== 'image' || !originalImageData) return;
+    if (!uploadedFile || !originalImageData) return;
+
+    // 支持图片和PDF的水印预览
+    if (currentFileType !== 'image' && currentFileType !== 'pdf') return;
 
     const ctx = previewCanvas.getContext('2d');
     const canvas = previewCanvas;
@@ -787,28 +790,16 @@ requestAnimationFrame(() => {
 
 // ===== 棰勮鍖哄煙婊氬姩璺熼殢 =====
 function adjustPreviewPosition() {
-    // 鍙湪妗岄潰绔墽琛岋紙绐楀彛瀹藉害澶т簬1024px锛?
-if (window.innerWidth < 1024) return;
+    // 鍙湪妗岄潰绔墽琛岋紙绐楀彛瀹藉害澶т簬1024px锛?
+    if (window.innerWidth < 1024) return;
 
-    // 濡傛灉棰勮鍖哄煙涓嶅彲瑙侊紝涓嶉渶瑕佽皟鏁?
-if (previewSection.style.display === 'none') return;
+    // 濡傛灉棰勮鍖哄煙涓嶅彲瑙侊紝涓嶉渶瑕佽皟鏁?
+    if (previewSection.style.display === 'none') return;
 
-    const previewRect = previewSection.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-
-    // 璁＄畻棰勮鍖哄煙鐨勫疄闄呴珮搴?
-const previewHeight = previewSection.offsetHeight;
-
-    // 濡傛灉棰勮鍖哄煙楂樺害瓒呰繃瑙嗙獥楂樺害
-if (previewHeight > viewportHeight - 40) {
-        // 璁剧疆鏈€澶ч珮搴︼紝纭繚瀹屾暣鏄剧ず鍦ㄨ绐楀唴
-previewSection.style.maxHeight = `${viewportHeight - 40}px`;
-        previewSection.style.overflowY = 'auto';
-    } else {
-        // 濡傛灉棰勮鍖哄煙鍙互瀹屾暣鏄剧ず锛岀Щ闄ゆ渶澶ч珮搴﹂檺鍒?
-previewSection.style.maxHeight = 'none';
-        previewSection.style.overflowY = 'visible';
-    }
+    // 移除高度限制，改为在CSS中通过preview-container的max-height控制
+    // 这样可以保证preview-container内部可以滚动
+    previewSection.style.maxHeight = 'none';
+    previewSection.style.overflowY = 'visible';
 }
 
 // ===== 鍒濆鍖栧簲鐢?=====
@@ -884,12 +875,15 @@ async function renderPdfPage(pageNum) {
         const page = await pdfDoc.getPage(pageNum);
         
         // 璁剧疆canvas灏哄
-        const viewport = page.getViewport({ scale: 1.5 });
+        const viewport = page.getViewport({ scale: 2 });
         previewCanvas.width = viewport.width;
         previewCanvas.height = viewport.height;
         
         // 娓叉煋PDF椤靛埌canvas
         const ctx = previewCanvas.getContext('2d');
+        
+        // 清空canvas确保完整渲染
+        ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
         const renderContext = {
             canvasContext: ctx,
             viewport: viewport
@@ -899,6 +893,9 @@ async function renderPdfPage(pageNum) {
         
         // 淇濆瓨鍘熷PDF鍥惧儚锛屼互渚垮姞姘村嵃
         originalImageData = ctx.getImageData(0, 0, previewCanvas.width, previewCanvas.height);
+        
+        // 应用水印到当前PDF页面
+        applyWatermarkToCanvas(ctx, previewCanvas.width, previewCanvas.height);
     } catch (error) {
         console.error('娓叉煋PDF椤靛け璐?:', error);
         alert('娓叉煋PDF澶辫触锛岃閲嶈瘯');

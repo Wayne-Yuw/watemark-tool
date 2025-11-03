@@ -604,8 +604,9 @@ section {
     border-radius: 12px;
     padding: 20px;
     min-height: 300px;
+    max-height: 70vh;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     overflow: auto;
     border: 1px solid var(--border-color);
