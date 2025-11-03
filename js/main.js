@@ -75,8 +75,8 @@ const downloadBtn = document.getElementById('downloadBtn');
 // ===== 鍒濆鍖栦簨浠剁洃鍚?=====
 function initEventListeners() {
     // 涓婁紶鎸夐挳鐐瑰嚮
-uploadBtn.addEventListener('click', () => fileInput.click());
-    changeFileBtn.addEventListener('click', () => fileInput.click());
+uploadBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+    changeFileBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
     clearFileBtn.addEventListener('click', clearAllAndReset);
 
     // 鏂囦欢閫夋嫨
@@ -86,11 +86,7 @@ fileInput.addEventListener('change', handleFileSelect);
 uploadArea.addEventListener('dragover', handleDragOver);
     uploadArea.addEventListener('dragleave', handleDragLeave);
     uploadArea.addEventListener('drop', handleDrop);
-    uploadArea.addEventListener('click', (e) => {
-        if (e.target === uploadArea || uploadArea.contains(e.target)) {
-            fileInput.click();
-        }
-    });
+    uploadArea.addEventListener('click', () => { fileInput.click(); });
 
     // Tab鍒囨崲
 tabBtns.forEach(btn => {
@@ -239,19 +235,22 @@ function handleDrop(e) {
 
 function processFile(file) {
     // 楠岃瘉鏂囦欢绫诲瀷
-const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-    if (!validTypes.includes(file.type)) {
-        return;
-    }
+// Robust file type detection: support common image mimes/exts and PDF
+const mime = file.type || '';
+const nameLower = (file.name || '').toLowerCase();
+const ext = nameLower.substring(nameLower.lastIndexOf('.') + 1);
+const imageMimes = new Set(['image/jpeg','image/png','image/jpg','image/webp','image/gif','image/bmp']);
+const imageExts = new Set(['jpg','jpeg','png','webp','gif','bmp','jfif']);
+const isImage = (mime.startsWith('image/') && (mime !== 'image/svg+xml')) || imageMimes.has(mime) || imageExts.has(ext);
+const isPdf = mime === 'application/pdf' || ext === 'pdf';
+if (!isImage && !isPdf) { alert('不支持的文件类型，请选择 JPG/PNG/WebP/GIF/BMP 或 PDF 文件'); fileInput.value = ''; return; }
 
     // 楠岃瘉鏂囦欢澶у皬 (10MB)
 const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-        return;
-    }
+if (file.size > maxSize) { alert('文件过大，最大支持 10MB'); fileInput.value = ''; return; }
 
     uploadedFile = file;
-    currentFileType = file.type.startsWith('image/') ? 'image' : 'pdf';
+    currentFileType = isImage ? 'image' : 'pdf';
 
     // 鏇存柊鏂囦欢淇℃伅鏄剧ず
 fileName.textContent = file.name;
@@ -264,6 +263,7 @@ if (currentFileType === 'image') {
             filePreview.innerHTML = `<img src="${e.target.result}" alt="棰勮">`;
             loadImageToCanvas(e.target.result);
         };
+        reader.onerror = () => { alert('读取文件失败，请重试'); fileInput.value = ''; };
         reader.readAsDataURL(file);
     } else {
         filePreview.innerHTML = '<p style="color: #64748b;">PDF 鏂囦欢</p>';
@@ -291,14 +291,14 @@ setTimeout(() => {
 function loadImageToCanvas(imageSrc) {
     const img = new Image();
     img.onload = () => {
-        // 璁剧疆canvas灏哄
-const maxWidth = 800;
+        // Set canvas size with a max to keep preview manageable
+        const maxWidth = 800;
         const maxHeight = 600;
         let width = img.width;
         let height = img.height;
 
-        // 鎸夋瘮渚嬬缉鏀?
-if (width > maxWidth || height > maxHeight) {
+        // Scale down proportionally if needed
+        if (width > maxWidth || height > maxHeight) {
             const ratio = Math.min(maxWidth / width, maxHeight / height);
             width *= ratio;
             height *= ratio;
@@ -310,12 +310,13 @@ if (width > maxWidth || height > maxHeight) {
         const ctx = previewCanvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        // 淇濆瓨鍘熷鍥惧儚鏁版嵁
-originalImageData = ctx.getImageData(0, 0, width, height);
+        // Store original image for re-rendering watermarks
+        originalImageData = ctx.getImageData(0, 0, width, height);
 
-        // 搴旂敤鍒濆姘村嵃
-updatePreview();
+        // Apply initial watermark
+        updatePreview();
     };
+    img.onerror = () => { alert('图片加载失败，可能格式不受支持'); fileInput.value=''; };
     img.src = imageSrc;
 }
 
@@ -339,7 +340,8 @@ function handleWatermarkImage(e, type) {
         };
         img.src = event.target.result;
     };
-    reader.readAsDataURL(file);
+    reader.onerror = () => { alert('读取文件失败，请重试'); fileInput.value = ''; };
+        reader.readAsDataURL(file);
 }
 
 // ===== UI浜や簰鍑芥暟 =====
@@ -821,6 +823,11 @@ if (previewSection.style.display !== 'none' && !isPreviewFloating) {
     resizeObserver.observe(previewSection);
 
     });
+
+
+
+
+
 
 
 
