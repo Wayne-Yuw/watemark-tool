@@ -42,6 +42,7 @@ const filePreview = document.getElementById('filePreview');
 const fileName = document.getElementById('fileName');
 const fileSize = document.getElementById('fileSize');
 const previewCanvas = document.getElementById('previewCanvas');
+const previewContainer = document.querySelector('.preview-container');
 
 // PDF鎺у埗鎸夐挳
 const pdfControls = document.getElementById("pdfControls");
@@ -175,6 +176,17 @@ applyBtn.addEventListener('click', applyWatermark);
     // PDF缈婚〉鎸夐挳
     prevPageBtn.addEventListener("click", showPreviousPage);
     nextPageBtn.addEventListener("click", showNextPage);
+
+    // 禁用预览区域右键菜单
+    previewContainer.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    });
+
+    previewCanvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    });
 }
 
 // ===== 娓呴櫎鎵€鏈夊唴瀹瑰苟閲嶇疆鍒板垵濮嬬姸鎬?=====
