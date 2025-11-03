@@ -623,6 +623,59 @@ section {
     box-shadow: var(--shadow-md);
 }
 
+/* ===== PDF鎺у埗鎸夐挳鏍峰紡 ===== */
+.pdf-controls {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 12px;
+    background: var(--bg-color);
+    border-radius: 8px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.pdf-nav-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.pdf-nav-btn:hover:not(:disabled) {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.pdf-nav-btn:disabled {
+    background: var(--border-color);
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.pdf-nav-btn svg {
+    display: block;
+}
+
+.pdf-page-info {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    min-width: 120px;
+    text-align: center;
+}
+
+
 /* ===== 底部样式 ===== */
 .footer {
     text-align: center;

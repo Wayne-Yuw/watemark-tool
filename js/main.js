@@ -2,6 +2,10 @@
 let uploadedFile = null;
 let currentFileType = null;
 let originalImageData = null; // 淇濆瓨鍘熷鍥惧儚
+// PDF相关变量
+let pdfDoc = null; // PDF文档对象
+let currentPdfPage = 1; // 当前PDF页码
+let totalPdfPages = 0; // PDF总页数
 let watermarkSettings = {
     type: 'text',
     text: '',
@@ -37,6 +41,13 @@ const filePreview = document.getElementById('filePreview');
 const fileName = document.getElementById('fileName');
 const fileSize = document.getElementById('fileSize');
 const previewCanvas = document.getElementById('previewCanvas');
+
+// PDF鎺у埗鎸夐挳
+const pdfControls = document.getElementById("pdfControls");
+const prevPageBtn = document.getElementById("prevPageBtn");
+const nextPageBtn = document.getElementById("nextPageBtn");
+const currentPageSpan = document.getElementById("currentPage");
+const totalPagesSpan = document.getElementById("totalPages");
 
 // Tab鍒囨崲鍏冪礌
 const tabBtns = document.querySelectorAll('.tab-btn');
@@ -159,6 +170,10 @@ watermarkText.addEventListener('input', (e) => {
 applyBtn.addEventListener('click', applyWatermark);
     resetBtn.addEventListener('click', resetSettings);
     downloadBtn.addEventListener('click', downloadFile);
+
+    // PDF缈婚〉鎸夐挳
+    prevPageBtn.addEventListener("click", showPreviousPage);
+    nextPageBtn.addEventListener("click", showNextPage);
 }
 
 // ===== 娓呴櫎鎵€鏈夊唴瀹瑰苟閲嶇疆鍒板垵濮嬬姸鎬?=====
@@ -267,7 +282,8 @@ if (currentFileType === 'image') {
         reader.readAsDataURL(file);
     } else {
         filePreview.innerHTML = '<p style="color: #64748b;">PDF 鏂囦欢</p>';
-        // PDF澶勭悊灏嗗湪鍚庣画瀹炵幇
+        // 加载并预览PDF
+        loadPdfFile(file);
 }
 
     // 鏄剧ず鏂囦欢淇℃伅鍜岄殣钘忎笂浼犲尯鍩?
@@ -823,6 +839,114 @@ if (previewSection.style.display !== 'none' && !isPreviewFloating) {
     resizeObserver.observe(previewSection);
 
     });
+
+// ===== PDF鐩稿叧鍑芥暟 =====
+
+/**
+ * 鍔犺浇PDF鏂囦欢
+ */
+async function loadPdfFile(file) {
+    try {
+        // 璁剧疆PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        // 璇诲彇鏂囦欢涓篈rrayBuffer
+        const arrayBuffer = await file.arrayBuffer();
+        
+        // 鍔犺浇PDF鏂囨。
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        pdfDoc = await loadingTask.promise;
+        totalPdfPages = pdfDoc.numPages;
+        currentPdfPage = 1;
+        
+        // 鏄剧ずPDF鎺у埗鎸夐挳
+        pdfControls.style.display = 'flex';
+        
+        // 娓叉煋绗竴椤?
+        await renderPdfPage(currentPdfPage);
+        
+        // 鏇存柊椤电爜鏄剧ず
+        updatePageInfo();
+    } catch (error) {
+        console.error('鍔犺浇PDF澶辫触:', error);
+        alert('鍔犺浇PDF澶辫触锛岃閲嶈瘯');
+    }
+}
+
+/**
+ * 娓叉煋鎸囧畾椤电殑PDF
+ */
+async function renderPdfPage(pageNum) {
+    if (!pdfDoc) return;
+    
+    try {
+        // 鑾峰彇鎸囧畾椤?
+        const page = await pdfDoc.getPage(pageNum);
+        
+        // 璁剧疆canvas灏哄
+        const viewport = page.getViewport({ scale: 1.5 });
+        previewCanvas.width = viewport.width;
+        previewCanvas.height = viewport.height;
+        
+        // 娓叉煋PDF椤靛埌canvas
+        const ctx = previewCanvas.getContext('2d');
+        const renderContext = {
+            canvasContext: ctx,
+            viewport: viewport
+        };
+        
+        await page.render(renderContext).promise;
+        
+        // 淇濆瓨鍘熷PDF鍥惧儚锛屼互渚垮姞姘村嵃
+        originalImageData = ctx.getImageData(0, 0, previewCanvas.width, previewCanvas.height);
+    } catch (error) {
+        console.error('娓叉煋PDF椤靛け璐?:', error);
+        alert('娓叉煋PDF澶辫触锛岃閲嶈瘯');
+    }
+}
+
+/**
+ * 鏇存柊椤电爜淇℃伅鏄剧ず
+ */
+function updatePageInfo() {
+    currentPageSpan.textContent = currentPdfPage;
+    totalPagesSpan.textContent = totalPdfPages;
+    
+    // 鏇存柊鎸夐挳鐘舵€?
+    prevPageBtn.disabled = currentPdfPage <= 1;
+    nextPageBtn.disabled = currentPdfPage >= totalPdfPages;
+}
+
+/**
+ * 鏄剧ず涓婁竴椤?
+ */
+async function showPreviousPage() {
+    if (currentPdfPage <= 1) return;
+    currentPdfPage--;
+    await renderPdfPage(currentPdfPage);
+    updatePageInfo();
+}
+
+/**
+ * 鏄剧ず涓嬩竴椤?
+ */
+async function showNextPage() {
+    if (currentPdfPage >= totalPdfPages) return;
+    currentPdfPage++;
+    await renderPdfPage(currentPdfPage);
+    updatePageInfo();
+}
+
+/**
+ * 閲嶇疆PDF鐘舵€?
+ */
+function resetPdfState() {
+    pdfDoc = null;
+    currentPdfPage = 1;
+    totalPdfPages = 0;
+    pdfControls.style.display = 'none';
+}
+
 
 
 
